@@ -1,0 +1,21 @@
+<html><head></head><body>
+  <script src="/portal.js"></script>
+  <script>
+    var options = {
+        transports:["ws","longpollajax"],
+        reconnect:function(lastDelay,attempts){
+          if(options.transports.length > 1)
+            options.transports.shift();
+          return 2 * (lastDelay || 100);},
+        prepare:function(connect,disconnect,opts){
+          opts.transports = options.transports;connect()}
+      }
+    var conn = portal.open("/hijacker",options)
+      .on("message",function(msg){document.body.innerHTML+= "<p>" + msg + "</p>";})
+      .on("open",function(){
+        conn.send("message","I am Ichiro");
+        setTimeout(function(){conn.send("message","I am Jiro")}, 500);
+        setTimeout(function(){conn.send("message","I am Saburo")}, 500);
+      });
+  </script>
+</body><html>
