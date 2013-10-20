@@ -8,9 +8,9 @@
             options.transports.shift();
           return 2 * (lastDelay || 100);},
         prepare:function(connect,disconnect,opts){
-          opts.transports = options.transports;connect()}
-      }
-    var conn = portal.open("/hijacker",options)
+          opts.transports = options.transports;connect();}
+      };
+    var conn = portal.open("/drunkmonkey",options)
       .on("message",function(msg){document.body.innerHTML+= "<p>" + msg + "</p>";})
       .on("open",function(){
         conn.send("message","I am Ichiro");

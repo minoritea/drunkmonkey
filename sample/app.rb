@@ -6,7 +6,7 @@ require "drunkmonkey"
 list = []
 Rack::Handler::Puma.run(Rack::Builder.new{
   root = File.dirname(__FILE__)
-  use DrunkMonkey::Builder, path:"/hijacker" do
+  use DrunkMonkey::Builder do
     on :open do |socket|
       socket.push "Welcome!"
     end
