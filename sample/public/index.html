@@ -1,21 +1,54 @@
 <html><head></head><body>
+  <div id="messages"></div>
+  <div>
+    <span id="on_login">My name is:</span>
+    <input id="message_box" type="text">
+    <button id="button">SEND</button>
+  </div>
   <script src="/portal.js"></script>
   <script>
-    var options = {
-        transports:["ws","longpollajax"],
-        reconnect:function(lastDelay,attempts){
-          if(options.transports.length > 1)
-            options.transports.shift();
-          return 2 * (lastDelay || 100);},
-        prepare:function(connect,disconnect,opts){
-          opts.transports = options.transports;connect();}
+    window.onload = function(){
+      var options = {
+          transports:["ws","longpollajax"],
+          reconnect:function(lastDelay,attempts){
+            if(options.transports.length > 1)
+              options.transports.shift();
+            return 2 * (lastDelay || 100);},
+          prepare:function(connect,disconnect,opts){
+            opts.transports = options.transports;connect();}
+        };
+      
+      var socket;
+      function openPortal(){
+       var socket = portal.open("/drunkmonkey",options)
+        .on("message",function(msg){
+          document.getElementById("messages").innerHTML += "<p>" + msg + "</p>";
+        });
+        return socket;
       };
-    var conn = portal.open("/drunkmonkey",options)
-      .on("message",function(msg){document.body.innerHTML+= "<p>" + msg + "</p>";})
-      .on("open",function(){
-        conn.send("message","I am Ichiro");
-        setTimeout(function(){conn.send("message","I am Jiro")}, 500);
-        setTimeout(function(){conn.send("message","I am Saburo")}, 500);
-      });
+    
+      var socket;
+      
+      function _send_message(){
+        var message_box = document.getElementById("message_box");
+        var message = message_box.value;
+        if (message.length > 0) {
+          message_box.value = "";
+          socket.send("message",message);
+        }
+      }
+      
+      function send_message(){
+        if (socket == null) {
+          document.getElementById("on_login").innerHTML = "";
+          socket = openPortal();
+          _send_message();
+        } else {
+          _send_message();
+        }
+      };
+      
+      document.getElementById("button").onclick = send_message;
+    };
   </script>
 </body><html>

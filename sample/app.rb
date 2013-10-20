@@ -3,18 +3,21 @@ require "rack/handler/puma"
 $:.unshift File.expand_path("./lib")
 require "drunkmonkey"
 
-list = []
+sockets = {}
 Rack::Handler::Puma.run(Rack::Builder.new{
   root = File.dirname(__FILE__)
   use DrunkMonkey::Builder do
     on :open do |socket|
-      socket.push "Welcome!"
+      sockets[socket] = ""
     end
     
     on :message do |socket,msg|
-      if match = msg.match(/\AI am (.+)/)
-        list << match[1]
-        socket.push "Current members are #{list.join(',')}"
+      if sockets[socket].empty?
+        sockets[socket] = msg
+        socket.push "Welcome, #{msg}!"
+      else
+        name = sockets[socket]
+        sockets.each{|s,_|s.push "#{name}: #{msg}"}
       end
     end
   end
