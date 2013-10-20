@@ -7,6 +7,7 @@ require "json"
 require "drunkmonkey/transport"
 
 module DrunkMonkey
+  
   class Controller
     include Celluloid
     def initialize name = :default_controller
@@ -30,10 +31,7 @@ module DrunkMonkey
     extend Forwardable
     
     DEFAULT_OPTIONS = {
-      enable_session: true,
-      path: "/hijacker",
-      session_secret: "secret#{object_id}",
-      session_key: "rack.hijacker.session",
+      path: "/drunkmonkey",
       controller_name: :default_controller
     }.freeze
     
