@@ -1,7 +1,10 @@
 # DrunkMonkey
 
-DrunkMonkey is a rack middleware providing realtime two-way http communication with API for [portal.js](https://github.com/flowersinthesand/portal/ "Portal").
+DrunkMonkey is a rack middleware providing realtime two-way http communication with API for [Portal](https://github.com/flowersinthesand/portal/ "Portal").
 
+## Supported servers
+You should use servers which supports Rack hijacking API, such as follows:
+- Puma
 
 ## Installation
 
@@ -21,11 +24,10 @@ Or install it yourself as:
 
 Add DrunkMonkey::Builder to Rack application by **use** method.
 
-
 Plain Rack:
 ```ruby
 app = Rack::Builder.new do
-  use DrunkMonkey::Builder do
+  use DrunkMonkey::Middleware do
     on :message do |socket, message|
       socket.push "ECHO: #{message}"
     end
@@ -39,13 +41,13 @@ Sinatra:
 ```ruby
 require "sinatra"
 
-use DrunkMonkey::Builder do
+use DrunkMonkey::Middleware do
   on :message do |socket, message|
     socket.push "ECHO: #{message}"
   end
 end
 ```
-Note: the class passed **use** method is initialized with the block for each requests, so handlers are reset everytime. 
+Note: the passed block will be executed once when *use* is called at first.
 
 Then, include Portal to HTML and initialize it as follows.
 
