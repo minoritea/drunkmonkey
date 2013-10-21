@@ -1,6 +1,5 @@
 require "puma"
 require "rack/handler/puma"
-$:.unshift File.expand_path("./lib")
 require "drunkmonkey"
 
 sockets = {}
