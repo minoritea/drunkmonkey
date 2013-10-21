@@ -129,6 +129,7 @@ module DrunkMonkey
 
       def push message
         @messages << message
+        signal :pushed
       end
 
       private
@@ -137,16 +138,13 @@ module DrunkMonkey
         ""
       end
 
-      def downstream params, timeout = 1000
+      def downstream params
         if params["when"] == "open"
           @controller.async.fire :open, Actor.current
           ""
         else
-          timeout = timeout.to_f
-          until message = @messages.shift or timeout <= 0
-            sleep 0.1
-            timeout -= 0.1
-          end
+          wait :pushed if @messages.empty?
+          message = @messages.shift
           message ? portal(message) : ""
         end
       end
