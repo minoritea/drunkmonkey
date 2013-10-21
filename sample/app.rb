@@ -6,7 +6,7 @@ require "drunkmonkey"
 sockets = {}
 Rack::Handler::Puma.run(Rack::Builder.new{
   root = File.dirname(__FILE__)
-  use DrunkMonkey::Builder do
+  use DrunkMonkey::Middleware do
     on :open do |socket|
       sockets[socket] = ""
     end
