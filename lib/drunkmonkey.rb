@@ -6,8 +6,7 @@ require "forwardable"
 require "json"
 require "drunkmonkey/transport"
 
-module DrunkMonkey
-  
+module DrunkMonkey  
   class Controller
     include Celluloid
     def initialize name = :default_controller
@@ -61,8 +60,27 @@ module DrunkMonkey
         end
       end  
     end
-    
-
-    
   end
+  
+  def self.middleware
+    Class.new do
+      class << self
+        attr_accessor :builder
+      end
+
+      def initialize app, **options, &block
+        if self.class.builder
+          self.class.builder.run app
+        else
+          self.class.builder = Builder.new app, **options, &block
+        end
+      end
+      
+      def call env
+        self.class.builder.call env
+      end
+    end
+  end
+  
+  Middleware = self.middleware
 end
