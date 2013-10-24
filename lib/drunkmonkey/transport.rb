@@ -14,6 +14,7 @@ module DrunkMonkey
       request = Rack::Request.new(env)
       if websocket? env
         WebSocket.resume request, **options
+        [500,{},[]]
       else
         body = Comet.resume request, **options
         [200,{},[body]]
@@ -75,6 +76,7 @@ module DrunkMonkey
           Celluloid.sleep 0.001
           upstream
           downstream
+          return if @socket.closed?
         end
       end
     
@@ -110,7 +112,8 @@ module DrunkMonkey
           @socket.write(
             ::WebSocket::Frame::Outgoing::Server.new(
               data: portal(message), type: :text, version: @handshake.version))
-        end  
+        end
+      rescue Errno::EPIPE => e  
       end
     end
     
