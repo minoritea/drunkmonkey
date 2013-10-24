@@ -10,15 +10,11 @@ You should use servers which supports Rack hijacking API, such as follows:
 
 Add this line to your application's Gemfile:
 
-    gem 'drunkmonkey'
+    gem 'drunkmonkey', git: "https://github.com/minoritea/drunkmonkey.git"
 
 And then execute:
 
     $ bundle
-
-Or install it yourself as:
-
-    $ gem install drunkmonkey
 
 ## Usage
 
@@ -49,7 +45,7 @@ end
 ```
 Note: the passed block will be executed once when *use* is called at first.
 
-Then, include Portal to HTML and initialize it as follows.
+Then, include [Portal](https://github.com/flowersinthesand/portal/ "Portal") to HTML and initialize it as follows.
 
 ```html
 <script src="/portal.js"></script>
@@ -76,6 +72,7 @@ var socket = portal.open("/drunkmonkey",options).on("open",function(){
 </script>
 ```
 
+Note: in current version, supported transports by Drunkmonkey are websocket and long-poll ajax only.
 
 ## Contributing
 
