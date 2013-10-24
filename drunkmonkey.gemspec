@@ -6,8 +6,8 @@ require 'drunkmonkey/version'
 Gem::Specification.new do |spec|
   spec.name          = "drunkmonkey"
   spec.version       = DrunkMonkey::VERSION
-  spec.authors       = ["minoritea"]
-  spec.email         = ["m.tokuda@aol.jp"]
+  spec.authors       = ["Minori Tokuda"]
+  spec.email         = ["minorityland@gmail.jp"]
   spec.description   = <<-EOS
     DrunkMonkey is a rack middleware providing realtime two-way http communication with API for Portal, a javascript messaging library.
     It provides just two protocols currently; websocket and longpoll comet.
