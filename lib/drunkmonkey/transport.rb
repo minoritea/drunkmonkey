@@ -3,7 +3,7 @@ require "websocket"
 module DrunkMonkey
   module Transport
     # Taken from https://github.com/simulacre/sinatra-websocket/
-    # Originally taken from skinny https://github.com/sj26/skinny and updated to support Firefox
+    # Originally taken from skinny https://github.com/sj26/skinny
     def self.websocket? env
       env['HTTP_CONNECTION'] && env['HTTP_UPGRADE'] &&
         env['HTTP_CONNECTION'].split(',').map(&:strip).map(&:downcase).include?('upgrade') &&
