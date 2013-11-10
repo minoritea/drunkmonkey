@@ -15,7 +15,7 @@ module DrunkMonkey
     end
 
     def on event, &block
-      @handlers[event] ||= block
+      @handlers[event] = block
     end
     
     execute_block_on_receiver :on
@@ -41,6 +41,8 @@ module DrunkMonkey
       options = DEFAULT_OPTIONS.merge(options)
       @controller = Celluloid::Actor[options[:controller_name]] ||
         Controller.new(options[:controller_name])
+      
+      instance_eval(&block) if block
       
       mapping = Hash.new
       mapping[options[:path]] = -> env do

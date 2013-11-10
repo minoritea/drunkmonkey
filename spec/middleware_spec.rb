@@ -60,3 +60,40 @@ module DrunkMonkey
     end
   end
 end
+
+module Rack
+  describe Builder do
+    describe "#use" do
+      specify do
+        handler = proc do |socket,msg|
+        end
+        
+        DrunkMonkey::Middleware.base = nil
+        
+        builder = Builder.new do
+          use DrunkMonkey::Middleware do
+            on :message, &handler
+          end
+          run -> env {[500,{},[]]}
+        end
+        
+        env = {
+          "REQUEST_METHOD" => "POST",
+          "SCRIPT_NAME" => "",
+          "PATH_INFO" => "/drunkmonkey",
+          "QUERY_STRING" => "",
+          "SERVER_NAME" => "localhost",
+          "SERVER_PORT" => "80",
+          "rack.input" => StringIO.new(%{data={"a":"1"}})
+        }
+        
+        builder.call env
+        
+        handlers = DrunkMonkey::Middleware.base
+          .instance_variable_get(:@controller)
+          .instance_variable_get(:@handlers)
+        expect(handlers[:message]).to eq(handler)
+      end
+    end
+  end
+end
