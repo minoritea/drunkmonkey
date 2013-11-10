@@ -1,5 +1,7 @@
 # DrunkMonkey
 
+[![Build Status](https://travis-ci.org/minoritea/drunkmonkey.png?branch=master)](https://travis-ci.org/minoritea/drunkmonkey)
+
 DrunkMonkey is a rack middleware providing realtime two-way http communication with API for [Portal](https://github.com/flowersinthesand/portal/ "Portal").
 
 ## Supported servers
