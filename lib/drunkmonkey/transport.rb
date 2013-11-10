@@ -10,20 +10,20 @@ module DrunkMonkey
         env['HTTP_UPGRADE'].downcase == 'websocket'
     end
     
-    def self.connection_from env, options
+    def self.call env, options = {}
       request = Rack::Request.new(env)
       if websocket? env
-        WebSocket.resume request, **options
+        WebSocket.resume request, options
         [500,{},[]]
       else
-        body = Comet.resume request, **options
+        body = Comet.resume request, options
         [200,{},[body]]
       end
     end
     
     class Base
       class << self
-        def resume request, **options
+        def resume request, options = {}
           @sessions ||= {}
         
           params = parse_params request
@@ -32,7 +32,7 @@ module DrunkMonkey
           session = @sessions[id]
         
           return session if session
-          @sessions[id] = new **options
+          @sessions[id] = new options
         end
       
         def parse_params request
@@ -48,7 +48,7 @@ module DrunkMonkey
         end
       end
     
-      def initialize **options
+      def initialize options = {}
         @controller = Celluloid::Actor[options[:controller_name]]
         @messages = []
       end
@@ -64,7 +64,7 @@ module DrunkMonkey
     class WebSocket < Base
       include Celluloid
     
-      def self.resume request, **options
+      def self.resume request, options = {}
         websocket = super
         websocket.handle_connection request
       end
@@ -120,7 +120,7 @@ module DrunkMonkey
     class Comet < Base
       include Celluloid
 
-      def self.resume request, **options
+      def self.resume request, options = {}
         comet = super
         comet.handle_connection(request)
       end

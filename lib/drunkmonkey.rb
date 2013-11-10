@@ -44,7 +44,7 @@ module DrunkMonkey
       
       mapping = Hash.new
       mapping[options[:path]] = -> env do
-        Transport.connection_from env, options
+        Transport.call env, options
       end
       
       @base_mapping = mapping.dup
@@ -65,6 +65,7 @@ module DrunkMonkey
         class << self
           attr_accessor :base
         end
+        
         def initialize app = nil, options = {}, &block
           if self.class.base
             self.class.base.remap app
