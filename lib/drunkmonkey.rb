@@ -26,7 +26,7 @@ module DrunkMonkey
     end
   end
   
-  class Builder < ::Rack::Builder
+  class Base
     extend Forwardable
     
     DEFAULT_OPTIONS = {
@@ -34,53 +34,51 @@ module DrunkMonkey
       controller_name: :default_controller
     }.freeze
     
-    def_delegator :controller, :on
+    def_delegator :@controller, :on
+    def_delegator :@map, :call
     
-    def controller
-      self.class.controller
-    end
-    
-    def controller= instance
-      self.class.controller=instance
-    end
-    
-    class << self
-      attr_accessor :controller
-    end
-    
-    def initialize default_app = nil, **options , &block
+    def initialize app = nil, options = {}, &block
       options = DEFAULT_OPTIONS.merge(options)
-      self.controller ||= Controller.new(options[:controller_name])
+      @controller = Celluloid::Actor[options[:controller_name]] ||
+        Controller.new(options[:controller_name])
       
-      super(default_app, &block)
+      mapping = Hash.new
+      mapping[options[:path]] = -> env do
+        Transport.connection_from env, options
+      end
       
-      map options[:path] do
-        run -> env do
-          Transport.connection_from env, options
+      @base_mapping = mapping.dup
+      
+      mapping["/"] = app if app
+      
+      @map = Rack::URLMap.new mapping
+    end
+    
+    def remap app = nil
+      mapping = @base_mapping.dup
+      mapping["/"] = app if app
+      @map = Rack::URLMap.new mapping
+    end
+    
+    def self.middleware
+      Class.new do
+        class << self
+          attr_accessor :base
         end
-      end  
+        def initialize app = nil, options = {}, &block
+          if self.class.base
+            self.class.base.remap app
+          else
+            self.class.base = Base.new(app,options,&block)
+          end
+        end
+      
+        def call env
+          self.class.base.call env
+        end
+      end
     end
   end
   
-  def self.middleware
-    Class.new do
-      class << self
-        attr_accessor :builder
-      end
-
-      def initialize app, **options, &block
-        if self.class.builder
-          self.class.builder.run app
-        else
-          self.class.builder = Builder.new app, **options, &block
-        end
-      end
-      
-      def call env
-        self.class.builder.call env
-      end
-    end
-  end
-  
-  Middleware = self.middleware
+  Middleware = Base.middleware
 end
