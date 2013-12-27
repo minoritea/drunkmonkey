@@ -1,13 +1,38 @@
 /*
- * Portal v1.1-snapshot
- * http://github.com/flowersinthesand/portal
+ * Portal v1.1.0
+ * http://flowersinthesand.github.io/portal/
  * 
  * Copyright 2011-2013, Donghwan Kim 
  * Licensed under the Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0
  */
-(function() {
+
+// Implement the Universal Module Definition (UMD) pattern 
+// see https://github.com/umdjs/umd/blob/master/returnExports.js
+(function(root, factory) {
+	if (typeof define === "function" && define.amd) {
+		// AMD
+		define(function() {
+			return factory(root);
+		});
+	} else if (typeof exports === "object") {
+		// Node
+		module.exports = factory((function() {
+			// Prepare the window powered by jsdom
+			var window = require("jsdom").jsdom().createWindow();
+			window.WebSocket = require("ws");
+			window.EventSource = require("eventsource");
+			return window;
+		})());
+		// node-XMLHttpRequest 1.x conforms XMLHttpRequest Level 1 but can perform a cross-domain request
+		module.exports.support.corsable = true;
+	} else {
+		// Browser globals, Window
+		root.portal = factory(root);
+	}
+}(this, function(window) {
 	
+	// Enables ECMAScript 5′s strict mode
 	"use strict";
 	
 	var // A global identifier
@@ -29,7 +54,10 @@
 		// Core prototypes
 		toString = Object.prototype.toString,
 		hasOwn = Object.prototype.hasOwnProperty,
-		slice = Array.prototype.slice;
+		slice = Array.prototype.slice,
+		// Regard for Node since these are not defined
+		document = window.document,
+		location = window.location;
 	
 	// Callback function
 	function callbacks(deferred) {
@@ -797,7 +825,7 @@
 		},
 		isBinary: function(data) {
 			// True if data is an instance of Blob, ArrayBuffer or ArrayBufferView 
-			return /^\[object\s(?:Blob|ArrayBuffer|.+Array)\]$/.test(toString.call(data));
+			return (/^\[object\s(?:Blob|ArrayBuffer|.+Array)\]$/).test(toString.call(data));
 		},
 		isFunction: function(fn) {
 			return toString.call(fn) === "[object Function]";
@@ -894,11 +922,11 @@
 				null :
 				window.JSON && window.JSON.parse ?
 					window.JSON.parse(data) :
-					new Function("return " + data)();
+					Function("return " + data)();
 		},
 		// http://github.com/flowersinthesand/stringifyJSON
 		stringifyJSON: function(value) {
-			var escapable = /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g, 
+			var escapable = /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
 				meta = {
 					'\b': '\\b',
 					'\t': '\\t',
@@ -944,9 +972,9 @@
 						
 						switch (toString.call(value)) {
 						case "[object Date]":
-							return isFinite(value.valueOf()) ? 
-								'"' + value.getUTCFullYear() + "-" + f(value.getUTCMonth() + 1) + "-" + f(value.getUTCDate()) + 
-								"T" + f(value.getUTCHours()) + ":" + f(value.getUTCMinutes()) + ":" + f(value.getUTCSeconds()) + "Z" + '"' : 
+							return isFinite(value.valueOf()) ?
+								'"' + value.getUTCFullYear() + "-" + f(value.getUTCMonth() + 1) + "-" + f(value.getUTCDate()) +
+								"T" + f(value.getUTCHours()) + ":" + f(value.getUTCMinutes()) + ":" + f(value.getUTCSeconds()) + "Z" + '"' :
 								"null";
 						case "[object Array]":
 							len = value.length;
@@ -972,7 +1000,6 @@
 					}
 				})("", {"": value});
 		},
-		browser: {},
 		storage: !!(window.localStorage && window.StorageEvent)
 	};
 	guid = support.now();
@@ -1005,13 +1032,26 @@
 			}
 		}
 	});
-	// Browser sniffing to determine the browser is Internet Explorer
-	(function() {
-		var match = /(msie) ([\w.]+)/.exec(navigator.userAgent.toLowerCase()) || [];
+	// Browser sniffing
+	(function(ua) {
+		var browser = {},
+			match =
+				// IE 6-10
+				/(msie) ([\w.]+)/.exec(ua) ||
+				// IE 11+
+				/(trident)(?:.*? rv:([\w.]+)|)/.exec(ua) ||
+				[];
 		
-		support.browser[match[1] || ""] = true;
-		support.browser.version = match[2] || "0";
-	})();
+		browser[match[1] || ""] = true;
+		browser.version = match[2] || "0";
+		
+		// Trident is the layout engine of the Internet Explorer
+		if (browser.trident) {
+			browser.msie = true;
+		}
+		
+		support.browser = browser;
+	})(window.navigator.userAgent.toLowerCase());
 	
 	portal.defaults = defaults = {
 		// Socket options
@@ -1481,7 +1521,7 @@
 		streamxhr: function(socket, options) {
 			var xhr;
 			
-			if ((support.browser.msie && +support.browser.version < 10) || (options.crossDomain && !support.corsable)) {
+			if ((support.browser.msie && +support.browser.version.split(".")[0] < 10) || (options.crossDomain && !support.corsable)) {
 				return;
 			}
 			
@@ -1576,7 +1616,7 @@
 						var container;
 						
 						function readDirty() {
-							var text, 
+							var text,
 								clone = container.cloneNode(true);
 							
 							// Adds a character not CR and LF to circumvent an Internet Explorer bug
@@ -1706,7 +1746,10 @@
 										if (data) {
 											socket._fire(data);
 										}
-										poll();
+										// Do not poll again if the connection has been aborted in open event
+										if (!aborted) {
+											poll();
+										}
 									} else {
 										socket.fire("close", "done");
 									}
@@ -1735,6 +1778,7 @@
 		// Long polling - XDomainRequest
 		longpollxdr: function(socket, options) {
 			var xdr,
+				aborted,
 				// deprecated
 				count = 0,
 				XDomainRequest = window.XDomainRequest;
@@ -1761,7 +1805,10 @@
 								if (data) {
 									socket._fire(data);
 								}
-								poll();
+								// Do not poll again if the connection has been aborted in open event
+								if (!aborted) {
+									poll();
+								}
 							} else {
 								socket.fire("close", "done");
 							}
@@ -1777,6 +1824,7 @@
 					poll();
 				},
 				close: function() {
+					aborted = true;
 					xdr.abort();
 				}
 			});
@@ -1785,6 +1833,7 @@
 		longpolljsonp: function(socket, options) {
 			var script,
 				called,
+				aborted,
 				// deprecated
 				count = 0,
 				callback = jsonpCallbacks.pop() || ("socket_" + (++guid));
@@ -1801,7 +1850,8 @@
 						script.async = true;
 						script.src = url;
 						script.clean = function() {
-							script.clean = script.onerror = script.onload = script.onreadystatechange = null;
+							// Assigning null to src attribute works in IE 6 and 7
+							script.clean = script.src = script.onerror = script.onload = script.onreadystatechange = null;
 							if (script.parentNode) {
 								script.parentNode.removeChild(script);
 							}
@@ -1811,10 +1861,15 @@
 								script.clean();
 								if (called) {
 									called = false;
-									poll();
+									if (!aborted) {
+										poll();
+									}
 								} else if (count === 1) {
 									socket.fire("open");
-									poll();
+									// Do not poll again if the connection has been aborted in open event
+									if (!aborted) {
+										poll();
+									}
 								} else {
 									socket.fire("close", "done");
 								}
@@ -1845,6 +1900,7 @@
 					poll();
 				},
 				close: function() {
+					aborted = true;
 					if (script.clean) {
 						script.clean();
 					}
@@ -1853,8 +1909,5 @@
 		}
 	};
 	
-	// Exposes portal to the global object
-	window.portal = portal;
-	
-})();
-/* jshint noarg:true, noempty:true, eqeqeq:true, evil:true, laxbreak:true, undef:true, browser:true, jquery:true, indent:4, maxerr:50 */
+	return portal;
+}));
